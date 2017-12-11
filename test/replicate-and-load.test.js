@@ -13,7 +13,7 @@ const dbPath2 = './orbitdb/tests/replicate-and-load/2'
 const ipfsPath1 = './orbitdb/tests/replicate-and-load/1/ipfs'
 const ipfsPath2 = './orbitdb/tests/replicate-and-load/2/ipfs'
 
-describe('orbit-db - Replicate and Load', function() {
+describe.skip('orbit-db - Replicate and Load', function() {
   this.timeout(config.timeout)
 
   let ipfs1, ipfs2, orbitdb1, orbitdb2, db1, db2

@@ -7,6 +7,7 @@ const KeyValueStore = require('orbit-db-kvstore')
 const CounterStore = require('orbit-db-counterstore')
 const DocumentStore = require('orbit-db-docstore')
 const Pubsub = require('orbit-db-pubsub')
+const Channel = require('ipfs-pubsub-dc')
 const Cache = require('orbit-db-cache')
 const Keystore = require('orbit-db-keystore')
 const AccessController = require('./ipfs-access-controller')
@@ -37,6 +38,7 @@ class OrbitDB {
     this.directory = directory || './orbitdb'
     this.keystore = Keystore.create(path.join(this.directory, this.id, '/keystore'))
     this.key = this.keystore.getKey(this.id) || this.keystore.createKey(this.id)
+    this._directConnections = {}
   }
 
   /* Databases */
@@ -84,6 +86,12 @@ class OrbitDB {
       await db.close()
       delete this.stores[db.address.toString()]
     }
+
+    // Close all direct connections to peers
+    Object.keys(this._directConnections).forEach(e => {
+      this._directConnections[e].close()
+      delete this._directConnections[e]
+    })
 
     // Disconnect from pubsub
     if (this._pubsub) 
@@ -152,17 +160,35 @@ class OrbitDB {
   }
 
   // Callback for when a peer connected to a database
-  _onPeerConnected (address, peer, room) {
+  async _onPeerConnected (address, peer, room) {
     logger.debug(`New peer '${peer}' connected to '${address}'`)
     const store = this.stores[address]
     if (store) {
+      // Create a direct channel to the connected peer
+      let channel = this._directConnections[peer]
+      if (!channel) {
+        try {
+          logger.debug(`Create a channel`)
+          channel = await Channel.open(this._ipfs, peer)
+          channel.on('message', (message) => this._onMessage(address, JSON.parse(message.data)))
+          this._directConnections[peer] = channel
+          logger.debug(`Channel created`)
+        } catch (e) {
+          console.error(e)
+          logger.error(e)
+        }
+      }
       // Send the newly connected peer our latest heads
       let heads = store._oplog.heads
       if (heads.length > 0) {
         logger.debug(`Send latest heads of '${address}':\n`, JSON.stringify(heads.map(e => e.hash), null, 2))
-        room.sendTo(peer, JSON.stringify(heads))
+        // Wait for the direct channel to be fully connected
+        await channel.connect()
+        channel.send(JSON.stringify(heads))
       }
       store.events.emit('peer', peer)
+    } else {
+      logger.error(`Database '${address}' is not open!`)
     }
   }
 

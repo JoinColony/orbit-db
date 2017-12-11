@@ -10,6 +10,8 @@ const leveldown = require('leveldown')
 const OrbitDB = require('../src/OrbitDB')
 const OrbitDBAddress = require('../src/orbit-db-address')
 const config = require('./utils/config')
+
+const IPFS = require('ipfs-api')
 const startIpfs = require('./utils/start-ipfs')
 
 const dbPath = './orbitdb/tests/create-open'
@@ -25,7 +27,9 @@ describe('orbit-db - Create & Open', function() {
     config.daemon1.repo = ipfsPath
     rmrf.sync(config.daemon1.repo)
     rmrf.sync(dbPath)
-    ipfs = await startIpfs(config.daemon1)
+    // ipfs = await startIpfs(config.daemon1)
+    // TODO: start a ipfs node (with js-ipfsd-ctl)
+    ipfs = IPFS('127.0.0.1')
     orbitdb = new OrbitDB(ipfs, dbPath)
   })
 
@@ -33,8 +37,8 @@ describe('orbit-db - Create & Open', function() {
     if(orbitdb) 
       orbitdb.stop()
 
-    if (ipfs)
-      await ipfs.stop()
+    // if (ipfs)
+    //   await ipfs.stop()
   })
 
   describe('Create', function() {
@@ -62,8 +66,8 @@ describe('orbit-db - Create & Open', function() {
       it('throws an error if database already exists', async () => {
         let err
         try {
-          db = await orbitdb.create('first', 'feed')
-          db = await orbitdb.create('first', 'feed')
+          db = await orbitdb.create('first', 'feed', { replicate: false })
+          db = await orbitdb.create('first', 'feed', { replicate: false })
         } catch (e) {
           err = e.toString()
         }
@@ -74,7 +78,7 @@ describe('orbit-db - Create & Open', function() {
       it('throws an error if database type doesn\'t match', async () => {
         let err, log, kv
         try {
-          log = await orbitdb.kvstore('keyvalue')
+          log = await orbitdb.kvstore('keyvalue', { replicate: false })
           kv = await orbitdb.eventlog(log.address.toString())
         } catch (e) {
           err = e.toString()
@@ -85,7 +89,7 @@ describe('orbit-db - Create & Open', function() {
 
     describe('Success', function() {
       before(async () => {
-        db = await orbitdb.create('second', 'feed')
+        db = await orbitdb.create('second', 'feed', { replicate: false })
         localDataPath = path.join(dbPath, db.address.root, db.address.path)
         await db.close()
       })

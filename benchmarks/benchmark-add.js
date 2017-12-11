@@ -1,6 +1,7 @@
 'use strict'
 
-const IPFS = require('ipfs')
+// const IPFS = require('ipfs')
+const IPFS = require('ipfs-api')
 const IPFSRepo = require('ipfs-repo')
 const DatastoreLevel = require('datastore-level')
 const OrbitDB = require('../src/OrbitDB')
@@ -29,19 +30,21 @@ const repoConf = {
   },
 }
 
-const ipfs = new IPFS({
-  repo: new IPFSRepo('./orbitdb/benchmarks/ipfs', repoConf),
-  start: false,
-  EXPERIMENTAL: {
-    pubsub: false,
-    sharding: false,
-    dht: false,
-  },
-})
+const ipfs = IPFS('127.0.0.1')
+// const ipfs = new IPFS({
+//   repo: new IPFSRepo('./orbitdb/benchmarks/ipfs', repoConf),
+//   start: false,
+//   EXPERIMENTAL: {
+//     pubsub: false,
+//     sharding: false,
+//     dht: false,
+//   },
+// })
 
-ipfs.on('error', (err) => console.error(err))
+// ipfs.on('error', (err) => console.error(err))
 
-ipfs.on('ready', async () => {
+// ipfs.on('ready', async () => {
+const run = async () => {
   try {
     const orbit = new OrbitDB(ipfs, './orbitdb/benchmarks')
     const db = await orbit.eventlog('orbit-db.benchmark', { 
@@ -66,4 +69,7 @@ ipfs.on('ready', async () => {
     console.log(e)
     process.exit(1)
   }
-})
+// })
+}
+
+run()

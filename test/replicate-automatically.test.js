@@ -13,7 +13,7 @@ const dbPath2 = './orbitdb/tests/replicate-automatically/2'
 const ipfsPath1 = './orbitdb/tests/replicate-automatically/1/ipfs'
 const ipfsPath2 = './orbitdb/tests/replicate-automatically/2/ipfs'
 
-describe('orbit-db - Automatic Replication', function() {
+describe.skip('orbit-db - Automatic Replication', function() {
   this.timeout(config.timeout)
 
   let ipfs1, ipfs2, orbitdb1, orbitdb2, db1, db2, db3, db4

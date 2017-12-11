@@ -15,26 +15,27 @@ const ipfsPath2 = './orbitdb/tests/replication/ipfs/2'
 
 const MemStore = require('./utils/mem-store')
 
-describe('orbit-db - Replication', function() {
+describe.only('orbit-db - Replication', function() {
   this.timeout(config.timeout * 2)
 
   let ipfs1, ipfs2, orbitdb1, orbitdb2, db1, db2
+  let id1, id2
 
   describe('two peers', function() {
     let timer
     let options
 
-    beforeEach(async () => {
-      clearInterval(timer)
-
+    before(async () => {
       config.daemon1.repo = ipfsPath1
       config.daemon2.repo = ipfsPath2
       rmrf.sync(config.daemon1.repo)
       rmrf.sync(config.daemon2.repo)
       rmrf.sync(dbPath1)
       rmrf.sync(dbPath2)
-      ipfs1 = await startIpfs(config.daemon1)
-      ipfs2 = await startIpfs(config.daemon2)
+      // ipfs1 = await startIpfs(config.daemon1)
+      // ipfs2 = await startIpfs(config.daemon2)
+      ipfs1 = await startIpfs({ address: '/ip4/127.0.0.1/tcp/5001' })
+      ipfs2 = await startIpfs({ address: '/ip4/127.0.0.1/tcp/5002' })
       // Use memory store for quicker tests
       const memstore = new MemStore()
       ipfs1.object.put = memstore.put.bind(memstore)
@@ -42,10 +43,25 @@ describe('orbit-db - Replication', function() {
       ipfs2.object.put = memstore.put.bind(memstore)
       ipfs2.object.get = memstore.get.bind(memstore)
       // Connect the peers manually to speed up test times
-      await ipfs2.swarm.connect(ipfs1._peerInfo.multiaddrs._multiaddrs[0].toString())
-      await ipfs1.swarm.connect(ipfs2._peerInfo.multiaddrs._multiaddrs[0].toString())
-      orbitdb1 = new OrbitDB(ipfs1, dbPath1)
-      orbitdb2 = new OrbitDB(ipfs2, dbPath2)
+      // const addr = await ipfs1.config.get('Addresses')
+      // console.log(addr)
+      id1 = await ipfs1.id()
+      id2 = await ipfs2.id()
+      const addr1 = id1.addresses[0]
+      const addr2 = id2.addresses[0]
+      // console.log(id.addresses)
+      // console.log(ipfs1._peerInfo.multiaddrs._multiaddrs.map(e => e.toString()))
+      // await ipfs2.swarm.connect(ipfs1._peerInfo.multiaddrs._multiaddrs[0].toString())
+      // await ipfs1.swarm.connect(ipfs2._peerInfo.multiaddrs._multiaddrs[0].toString())
+      await ipfs1.swarm.connect(addr2)
+      await ipfs2.swarm.connect(addr1)
+    })
+
+    beforeEach(async () => {
+      clearInterval(timer)
+      // await ipfs1.swarm.connect(addr2)
+      orbitdb1 = new OrbitDB(ipfs1, dbPath1, { peerId: id1.id })
+      orbitdb2 = new OrbitDB(ipfs2, dbPath2, { peerId: id2.id })
 
       options = { 
         // Set write access for both clients
@@ -74,8 +90,8 @@ describe('orbit-db - Replication', function() {
 
       if (db1)
         await db1.drop()
-      
-      if (db2) 
+
+      if (db2)
         await db2.drop()
 
       if(orbitdb1) 
@@ -86,11 +102,11 @@ describe('orbit-db - Replication', function() {
 
       return new Promise((resolve) => {
         setTimeout(async () => {
-          if (ipfs1)
-            await ipfs1.stop()
+          // if (ipfs1)
+          //   await ipfs1.stop()
 
-          if (ipfs2)
-            await ipfs2.stop()
+          // if (ipfs2)
+          //   await ipfs2.stop()
 
           resolve()
         }, 2000)
@@ -124,9 +140,13 @@ describe('orbit-db - Replication', function() {
       for (let i = 0; i < entryCount; i ++)
         entryArr.push(i)
 
-      await mapSeries(entryArr, (i) => db1.add('hello' + i))
+      return new Promise(async (resolve, reject) => {
+        try {
+          await mapSeries(entryArr, (i) => db1.add('hello' + i))
+        } catch (e) {
+          reject(e)
+        }
 
-      return new Promise(resolve => {
         timer = setInterval(() => {
           const items = db2.iterator({ limit: -1 }).collect()
           if (items.length === entryCount) {
@@ -241,8 +261,10 @@ describe('orbit-db - Replication', function() {
         let expectedEventCount = 512
 
         // Close second instance
-       await db2.close()
-       await db2.drop()
+        if (db2) {
+          await db2.close()
+          await db2.drop()
+        }
 
         // Trigger replication
         let adds = []
@@ -329,14 +351,13 @@ describe('orbit-db - Replication', function() {
           // Resolve with a little timeout to make sure we 
           // don't receive more than one event
           setTimeout(() => {
-            //console.log(eventCount['replicate.progress'], expectedEventCount)
+            // console.log(eventCount['replicate.progress'], expectedEventCount)
 
             if (eventCount['replicate.progress'] === expectedEventCount)
               finished = true
           }, 500)
         })
 
-        try {
           const st = new Date().getTime()
           timer = setInterval(async () => {
             if (finished) {
@@ -345,31 +366,32 @@ describe('orbit-db - Replication', function() {
               const et = new Date().getTime()
               console.log("Duration:", et - st, "ms")
 
-              assert.equal(eventCount['replicate'], expectedEventCount)
-              assert.equal(eventCount['replicate.progress'], expectedEventCount)
+              try {
+                assert.equal(eventCount['replicate'], expectedEventCount)
+                assert.equal(eventCount['replicate.progress'], expectedEventCount)
 
-              const replicateEvents = events.filter(e => e.event === 'replicate')
-              assert.equal(replicateEvents.length, expectedEventCount)
-              assert.equal(replicateEvents[0].entry.payload.value.split(' ')[0], 'hello')
-              assert.equal(replicateEvents[0].entry.clock.time, expectedEventCount)
+                const replicateEvents = events.filter(e => e.event === 'replicate')
+                assert.equal(replicateEvents.length, expectedEventCount)
+                assert.equal(replicateEvents[0].entry.payload.value.split(' ')[0], 'hello')
+                assert.equal(replicateEvents[0].entry.clock.time, expectedEventCount)
 
-              const replicateProgressEvents = events.filter(e => e.event === 'replicate.progress')
-              assert.equal(replicateProgressEvents.length, expectedEventCount)
-              assert.equal(replicateProgressEvents[0].entry.payload.value.split(' ')[0], 'hello')
-              assert.equal(replicateProgressEvents[0].entry.clock.time, expectedEventCount)
-              assert.equal(replicateProgressEvents[0].replicationInfo.max, expectedEventCount)
-              assert.equal(replicateProgressEvents[0].replicationInfo.progress, 1)
+                const replicateProgressEvents = events.filter(e => e.event === 'replicate.progress')
+                assert.equal(replicateProgressEvents.length, expectedEventCount)
+                assert.equal(replicateProgressEvents[0].entry.payload.value.split(' ')[0], 'hello')
+                assert.equal(replicateProgressEvents[0].entry.clock.time, expectedEventCount)
+                assert.equal(replicateProgressEvents[0].replicationInfo.max, expectedEventCount)
+                assert.equal(replicateProgressEvents[0].replicationInfo.progress, 1)
 
-              const replicatedEvents = events.filter(e => e.event === 'replicated')
-              assert.equal(replicatedEvents[0].replicationInfo.max, expectedEventCount)
-              assert.equal(replicatedEvents[replicatedEvents.length - 1].replicationInfo.progress, expectedEventCount)
+                const replicatedEvents = events.filter(e => e.event === 'replicated')
+                assert.equal(replicatedEvents[0].replicationInfo.max, expectedEventCount)
+                assert.equal(replicatedEvents[replicatedEvents.length - 1].replicationInfo.progress, expectedEventCount)
 
-              resolve()
+                resolve()
+              } catch (e) {
+                reject(e)
+              }
             }
           }, 100)
-        } catch (e) {
-          reject(e)
-        }
       })
     })
 

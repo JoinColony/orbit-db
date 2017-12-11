@@ -77,7 +77,7 @@ describe('CounterStore', function() {
       await counter.close()
     })
 
-    it('syncs counters', async () => {
+    it.skip('syncs counters', async () => {
       let options = {
         // Set write access for both clients
         write: [

@@ -49,7 +49,7 @@ const databaseInterfaces = [
   },
 ]
 
-describe('orbit-db - Multiple Databases', function() {
+describe.skip('orbit-db - Multiple Databases', function() {
   this.timeout(config.timeout)
 
   let ipfs1, ipfs2, orbitdb1, orbitdb2, db1, db2, db3, db4
