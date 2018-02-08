@@ -20,7 +20,6 @@
     "orbit-db-docstore": "~1.2.0",
     "orbit-db-eventstore": "~1.2.0",
     "orbit-db-feedstore": "~1.2.0",
-    "orbit-db-keystore": "~0.1.0",
     "orbit-db-kvstore": "~1.2.0",
     "orbit-db-pubsub": "~0.3.8"
   },

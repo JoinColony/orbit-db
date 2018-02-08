@@ -8,7 +8,6 @@ const CounterStore = require('orbit-db-counterstore')
 const DocumentStore = require('orbit-db-docstore')
 const Pubsub = require('orbit-db-pubsub')
 const Cache = require('orbit-db-cache')
-const Keystore = require('orbit-db-keystore')
 const AccessController = require('./ipfs-access-controller')
 const OrbitDBAddress = require('./orbit-db-address')
 const createDBManifest = require('./db-manifest')
@@ -35,7 +34,7 @@ class OrbitDB {
       : new Pubsub(this._ipfs, this.id)
     this.stores = {}
     this.directory = directory || './orbitdb'
-    this.keystore = options.keystore || Keystore.create(path.join(this.directory, this.id, '/keystore'))
+    this.keystore = options.keystore
     this.key = this.keystore.getKey(this.id) || this.keystore.createKey(this.id)
   }
 
