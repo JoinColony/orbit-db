@@ -36,8 +36,8 @@ Object.keys(testAPIs).forEach(API => {
       rmrf.sync(dbPath2)
       ipfsd = await startIpfs(API, config.daemon1)
       ipfs = ipfsd.api
-      orbitdb1 = new OrbitDB(ipfs, dbPath1)
-      orbitdb2 = new OrbitDB(ipfs, dbPath2)
+      orbitdb1 = new OrbitDB({ ipfs, directory: dbPath1 })
+      orbitdb2 = new OrbitDB({ ipfs, directory: dbPath2 })
       db = await orbitdb1.log('replication status tests')
     })
 

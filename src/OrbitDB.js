@@ -28,17 +28,25 @@ let databaseTypes = {
 }
 
 class OrbitDB {
-  constructor(ipfs, directory, options = {}) {
-    this._ipfs = ipfs
-    this.id = options.peerId || (this._ipfs._peerInfo ? this._ipfs._peerInfo.id._idB58String : 'default')
-    this._pubsub = options && options.broker
-      ? new options.broker(this._ipfs)
-      : new Pubsub(this._ipfs, this.id)
-    this.stores = {}
-    this.directory = directory || './orbitdb'
-    this.keystore = options.keystore || Keystore.create(path.join(this.directory, this.id, '/keystore'))
-    this.key = this.keystore.getKey(this.id) || this.keystore.createKey(this.id)
+  constructor({ directory, peerId, ipfs, key, keystore, PubsubProvider }) {
     this._directConnections = {}
+    this._ipfs = ipfs
+
+    this.directory = directory || './orbitdb'
+    this.id = peerId || (this._ipfs._peerInfo ? this._ipfs._peerInfo.id._idB58String : 'default')
+    this.keystore = keystore || Keystore.create(path.join(this.directory, this.id, '/keystore'))
+    this.key = key || this.keystore.getKey(this.id) || this.keystore.createKey(this.id)
+    this.stores = {}
+
+    this._pubsub = PubsubProvider ? new PubsubProvider(this._ipfs, this.id) : new Pubsub(this._ipfs, this.id)
+  }
+
+  static connect(args) {
+    return new OrbitDB(args)
+  }
+
+  get ipfs () {
+    return this._ipfs
   }
 
   /* Databases */

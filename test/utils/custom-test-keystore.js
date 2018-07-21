@@ -50,4 +50,4 @@ class CustomTestKeystore {
   }
 }
 
-module.exports = new CustomTestKeystore()
+module.exports = CustomTestKeystore

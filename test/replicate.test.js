@@ -64,8 +64,8 @@ Object.keys(testAPIs).forEach(API => {
     beforeEach(async () => {
       clearInterval(timer)
 
-      orbitdb1 = new OrbitDB(ipfs1, dbPath1)
-      orbitdb2 = new OrbitDB(ipfs2, dbPath2)
+      orbitdb1 = new OrbitDB({ ipfs: ipfs1, directory: dbPath1 })
+      orbitdb2 = new OrbitDB({ ipfs: ipfs2, directory: dbPath2 })
 
       options = { 
         // Set write access for both clients
