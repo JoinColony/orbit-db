@@ -118,8 +118,8 @@ class OrbitDB {
     if (!Store)
       throw new Error(`Invalid database type '${type}'`)
 
-    let accessController
-    if (options.accessControllerAddress) {
+    let accessController = options.accessController
+    if (!accessController && options.accessControllerAddress) {
       accessController = new AccessController(this._ipfs)
       await accessController.load(options.accessControllerAddress)
     }
@@ -128,12 +128,13 @@ class OrbitDB {
 
     const opts = Object.assign({ replicate: true }, options, {
       accessController: accessController,
+      // identity: options.identity,
       keystore: this.keystore,
       cache: cache,
       onClose: this._onClose.bind(this),
     })
 
-    const store = new Store(this._ipfs, this.id, address, opts)
+    const store = new Store(this._ipfs, options.identity, address, opts)
     store.events.on('write', this._onWrite.bind(this))
 
     // ID of the store is the address as a string
@@ -226,23 +227,24 @@ class OrbitDB {
     if (OrbitDBAddress.isValid(name))
       throw new Error(`Given database name is an address. Please give only the name of the database!`)
 
-    // Create an AccessController
-    const accessController = new AccessController(this._ipfs)
-    /* Disabled temporarily until we do something with the admin keys */
-    // Add admins of the database to the access controller
-    // if (options && options.admin) {
-    //   options.admin.forEach(e => accessController.add('admin', e))
+    // // Create an AccessController
+    const accessController = options.accessController
+    // const accessController = new AccessController(this._ipfs)
+    // /* Disabled temporarily until we do something with the admin keys */
+    // // Add admins of the database to the access controller
+    // // if (options && options.admin) {
+    // //   options.admin.forEach(e => accessController.add('admin', e))
+    // // } else {
+    // //   // Default is to add ourselves as the admin of the database
+    // //   accessController.add('admin', this.key.getPublic('hex'))
+    // // }
+    // // Add keys that can write to the database
+    // if (options && options.write && options.write.length > 0) {
+    //   options.write.forEach(e => accessController.add('write', e))
     // } else {
     //   // Default is to add ourselves as the admin of the database
-    //   accessController.add('admin', this.key.getPublic('hex'))
+    //   accessController.add('write', this.key.getPublic('hex'))
     // }
-    // Add keys that can write to the database
-    if (options && options.write && options.write.length > 0) {
-      options.write.forEach(e => accessController.add('write', e))
-    } else {
-      // Default is to add ourselves as the admin of the database
-      accessController.add('write', this.key.getPublic('hex'))
-    }
     // Save the Access Controller in IPFS
     const accessControllerAddress = await accessController.save()
 
