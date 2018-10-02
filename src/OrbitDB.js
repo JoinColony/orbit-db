@@ -137,8 +137,8 @@ let databaseTypes = {
     if (!Store)
       throw new Error(`Invalid database type '${type}'`)
 
-    let accessController
-    if (options.accessControllerAddress) {
+    let accessController = options.accessController
+    if (!accessController && options.accessControllerAddress) {
       accessController = new AccessController(this._ipfs)
       await accessController.load(options.accessControllerAddress)
     }
@@ -245,7 +245,8 @@ let databaseTypes = {
       throw new Error(`Given database name is an address. Please give only the name of the database!`)
 
     // Create an AccessController
-    const accessController = new AccessController(this._ipfs)
+    let accessController = options.accessController || new AccessController(this._ipfs)
+    let manifestHash
     /* Disabled temporarily until we do something with the admin keys */
     // Add admins of the database to the access controller
     // if (options && options.admin) {
@@ -255,17 +256,22 @@ let databaseTypes = {
     //   accessController.add('admin', this.key.getPublic('hex'))
     // }
     // Add keys that can write to the database
-    if (options && options.write && options.write.length > 0) {
-      options.write.forEach(e => accessController.add('write', e))
-    } else {
-      // Default is to add ourselves as the admin of the database
-      accessController.add('write', this.identity.publicKey)
-    }
-    // Save the Access Controller in IPFS
-    const accessControllerAddress = await accessController.save()
+    if (!options.accessController) {
+      if (options && options.write && options.write.length > 0) {
+        options.write.forEach(e => accessController.add('write', e))
+      } else {
+        // Default is to add ourselves as the admin of the database
+        accessController.add('write', this.identity.publicKey)
+      }
 
-    // Save the manifest to IPFS
-    const manifestHash = await createDBManifest(this._ipfs, name, type, accessControllerAddress)
+      // Save the Access Controller in IPFS
+      const accessControllerAddress = await accessController.save()
+      // Save the manifest to IPFS
+      manifestHash = await createDBManifest(this._ipfs, name, type, accessControllerAddress)
+    } else {
+      manifestHash = accessController.createManifest(this._ipfs, name, type)
+    }
+
 
     // Create the database address
     const dbAddress = OrbitDBAddress.parse(path.join('/orbitdb', manifestHash, name))
