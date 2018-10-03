@@ -25,7 +25,7 @@
     "orbit-db-keystore": "github:orbitdb/orbit-db-keystore#fix/verification",
     "orbit-db-kvstore": "github:thiagodelgado111/orbit-db-kvstore#maintenance/new-ipfs-log",
     "orbit-db-pubsub": "~0.5.5",
-    "orbit-db-store": "github:shamb0t/orbit-db-store#feat/new-ipfs-log"
+    "orbit-db-store": "github:orbitdb/orbit-db-store#516ba0a24d34b8d447413d984ff567a6e806d864"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
