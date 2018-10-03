@@ -412,3 +412,4 @@ let databaseTypes = {
 }
 
 module.exports = OrbitDB
+module.exports.IdentityProvider = IdentityProvider
