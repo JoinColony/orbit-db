@@ -269,7 +269,7 @@ let databaseTypes = {
       // Save the manifest to IPFS
       manifestHash = await createDBManifest(this._ipfs, name, type, accessControllerAddress)
     } else {
-      manifestHash = accessController.createManifest(this._ipfs, name, type)
+      manifestHash = await accessController.createManifest(this._ipfs, name, type)
     }
 
 
