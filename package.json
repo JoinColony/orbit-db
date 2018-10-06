@@ -17,7 +17,7 @@
     "logplease": "^1.2.14",
     "multihashes": "^0.4.12",
     "orbit-db-cache": "~0.2.4",
-    "orbit-db-counterstore": "github:shamb0t/orbit-db-counterstore#feat/new-ipfs-log",
+    "orbit-db-counterstore": "^1.4.0",
     "orbit-db-docstore": "~1.4.3",
     "orbit-db-eventstore": "~1.4.0",
     "orbit-db-feedstore": "~1.4.0",
@@ -25,7 +25,7 @@
     "orbit-db-keystore": "github:orbitdb/orbit-db-keystore#fix/verification",
     "orbit-db-kvstore": "github:thiagodelgado111/orbit-db-kvstore#maintenance/new-ipfs-log",
     "orbit-db-pubsub": "~0.5.5",
-    "orbit-db-store": "github:orbitdb/orbit-db-store#516ba0a24d34b8d447413d984ff567a6e806d864"
+    "orbit-db-store": "github:thiagodelgado111/orbit-db-store#fix/sync"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
