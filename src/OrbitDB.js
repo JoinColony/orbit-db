@@ -138,13 +138,10 @@ let databaseTypes = {
       throw new Error(`Invalid database type '${type}'`)
 
     let accessController = options.accessController
-    if (!accessController && options.accessControllerAddress) {
-      accessController = new AccessController(this._ipfs)
-      await accessController.load(options.accessControllerAddress)
-    }
+    if (!accessController) accessController = new AccessController(this._ipfs)
+    await accessController.load(options)
 
     const cache = await this._loadCache(this.directory, address)
-
     const opts = Object.assign({ replicate: true }, options, {
       accessController: accessController,
       cache: cache,
@@ -269,6 +266,7 @@ let databaseTypes = {
       // Save the manifest to IPFS
       manifestHash = await createDBManifest(this._ipfs, name, type, accessControllerAddress)
     } else {
+      // @TODO validate the access controller interface
       manifestHash = await accessController.createManifest(this._ipfs, name, type)
     }
 
