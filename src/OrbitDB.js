@@ -10,9 +10,8 @@ const Pubsub = require('orbit-db-pubsub')
 const Cache = require('orbit-db-cache')
 const Keystore = require('orbit-db-keystore')
 const IdentityProvider = require('orbit-db-identity-provider')
-const AccessController = require('./ipfs-access-controller')
+const IPFSAccessController = require('./ipfs-access-controller')
 const OrbitDBAddress = require('./orbit-db-address')
-const createDBManifest = require('./db-manifest')
 const exchangeHeads = require('./exchange-heads')
 const isDefined = require('./utils/is-defined')
 const Logger = require('logplease')
@@ -139,8 +138,8 @@ let databaseTypes = {
 
     let accessController = options.accessController
     if (!accessController) {
-      accessController = new AccessController(this._ipfs)
-      await accessController.load(options.accessControllerAddress)
+      accessController = new IPFSAccessController(this._ipfs)
+      await accessController.load(options)
     }
 
     const cache = await this._loadCache(this.directory, address)
@@ -243,8 +242,8 @@ let databaseTypes = {
     if (OrbitDBAddress.isValid(name))
       throw new Error(`Given database name is an address. Please give only the name of the database!`)
 
-    // Create an AccessController
-    const accessController = options.accessController || new AccessController(this._ipfs)
+    // Create an IPFSAccessController
+    const accessController = options.accessController || new IPFSAccessController(this._ipfs)
     /* Disabled temporarily until we do something with the admin keys */
     // Add admins of the database to the access controller
     // if (options && options.admin) {
@@ -254,20 +253,17 @@ let databaseTypes = {
     //   accessController.add('admin', this.key.getPublic('hex'))
     // }
     // Add keys that can write to the database
-
+    if (!options.accessController) {
       if (options && options.write && options.write.length > 0) {
-        options.write.forEach(e => accessController.add('write', e))
+        await Promise.all(options.write.map(e => accessController.add('write', e)))
       } else {
         // Default is to add ourselves as the admin of the database
-        accessController.add('write', this.identity.publicKey)
+        await accessController.add('write', this.identity.publicKey)
       }
+    }
 
-      // Save the Access Controller in IPFS
-      const accessControllerAddress = await accessController.save()
-      // Save the manifest to IPFS
-    const manifestHash = await createDBManifest(this._ipfs, name, type, accessControllerAddress)
-      // @TODO validate the access controller interface
-
+    // Save the manifest and access controller info in IPFS
+    const manifestHash = await accessController.createManifest(name, type, this.identity)
 
     // Create the database address
     const dbAddress = OrbitDBAddress.parse(path.join('/orbitdb', manifestHash, name))
@@ -350,7 +346,7 @@ let databaseTypes = {
       throw new Error(`Database '${dbAddress}' is type '${manifest.type}' but was opened as '${options.type}'`)
 
     // Save the database locally
-    await this._saveDBManifest(directory, dbAddress)
+    await this._addManifestToCache(directory, dbAddress)
 
     // Open the the database
     options = Object.assign({}, options, { accessControllerAddress: manifest.accessController })
@@ -409,3 +405,4 @@ let databaseTypes = {
 
 module.exports = OrbitDB
 module.exports.IdentityProvider = IdentityProvider
+module.exports.IPFSIPFSAccessController = IPFSAccessController
