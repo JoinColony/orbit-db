@@ -8,7 +8,7 @@ class IPFSAccessController extends AccessController {
     this._ipfs = ipfs
   }
 
-  async load (address) {
+  async load ({ accessControllerAddress: address }) {
     // Transform '/ipfs/QmPFtHi3cmfZerxtH9ySLdzpg1yFhocYDZgEZywdUXHxFU'
     // to 'QmPFtHi3cmfZerxtH9ySLdzpg1yFhocYDZgEZywdUXHxFU'
     if (address.indexOf('/ipfs') === 0)
