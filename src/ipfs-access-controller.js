@@ -34,15 +34,14 @@ class IPFSAccessController extends AbstractAccessController {
   }
 
   async save () {
-    let hash
     try {
       const access = JSON.stringify(this._access, null, 2)
       const dag = await this._ipfs.object.put(new Buffer(access))
-      hash = dag.toJSON().multihash.toString()
+      const hash = dag.toJSON().hash.toString()
+      return path.join('/ipfs', hash)
     } catch (e) {
       console.log("ACCESS ERROR:", e)
     }
-    return path.join('/ipfs', hash)
   }
 
   async setup ({ accessControllerAddress: address }) {

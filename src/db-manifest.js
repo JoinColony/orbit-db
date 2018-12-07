@@ -12,7 +12,7 @@ const createDBManifest = (name, type, accessControllerAddress, publicKey) => {
 
 const uploadDBManifest = async (ipfs, manifest) => {
   const dag = await ipfs.object.put(encodeManifest(manifest))
-  return dag.toJSON().multihash.toString()
+  return dag.toJSON().hash.toString()
 }
 
 const signDBManifest = async (manifest, identity, identityProvider) => {
