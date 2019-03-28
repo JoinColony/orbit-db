@@ -10,11 +10,10 @@ const createDAGNode = obj => new Promise((resolve, reject) => {
 });
 
 // Creates a DB manifest file and saves it in IPFS
-const createDBManifest = (name, type, accessControllerAddress, publicKey) => {
+const createDBManifest = (name, type, accessControllerAddress) => {
   return {
     name,
     type,
-    owner: publicKey,
     accessController: accessControllerAddress,
   }
 }
@@ -29,19 +28,8 @@ const uploadDBManifest = async (ipfs, manifest) => {
   return dag.toJSON().multihash.toString()
 }
 
-const signDBManifest = async (manifest, identity, identityProvider) => {
-  return identityProvider.sign(identity, encodeManifest(manifest))
-}
-
-const verifyDBManifest = async (manifest, signature, identityProvider) => {
-  const { owner } = manifest
-  return identityProvider.verify(signature, owner, encodeManifest(manifest))
-}
-
 module.exports = {
   createDBManifest,
   getManifestHash,
   uploadDBManifest,
-  signDBManifest,
-  verifyDBManifest
 }
