@@ -12,7 +12,7 @@ const Keystore = require('orbit-db-keystore')
 const IdentityProvider = require('orbit-db-identity-provider')
 const IPFSAccessController = require('./ipfs-access-controller')
 const OrbitDBAddress = require('./orbit-db-address')
-const { createDBManifest, getManifestHash, uploadDBManifest, signDBManifest, verifyDBManifest } = require('./db-manifest')
+const { createDBManifest, getManifestHash, uploadDBManifest } = require('./db-manifest')
 const exchangeHeads = require('./exchange-heads')
 const isDefined = require('./utils/is-defined')
 const Logger = require('logplease')
@@ -268,12 +268,11 @@ class OrbitDB {
     const accessControllerAddress = await accessController.save()
 
     // Save the manifest to IPFS
-    const manifest = createDBManifest(name, type, accessControllerAddress, this.identity.publicKey)
+    const manifest = createDBManifest(name, type, accessControllerAddress)
     const manifestHash = await uploadDBManifest(this._ipfs, manifest)
 
     // Create the database address
-    const manifestSignature = await signDBManifest(manifest, this.identity, this.identity.provider)
-    const dbAddress = OrbitDBAddress.parse(path.join('/orbitdb', manifestHash, name, manifestSignature))
+    const dbAddress = OrbitDBAddress.parse(path.join('/orbitdb', manifestHash, name))
 
     // Load local cache
     const haveDB = await this._loadCache(directory, dbAddress)
@@ -348,11 +347,6 @@ class OrbitDB {
     const manifest = JSON.parse(dag.toJSON().data)
     logger.debug(`Manifest for '${dbAddress}':\n${JSON.stringify(manifest, null, 2)}`)
 
-    const isValid = await verifyDBManifest(manifest, dbAddress.signature, this.identity.provider)
-    if (!isValid) {
-      throw new Error(`Could not verify ${dbAddress}`)
-    }
-
     // Make sure the type from the manifest matches the type that was given as an option
     if (options.type && manifest.type !== options.type)
       throw new Error(`Database '${dbAddress}' is type '${manifest.type}' but was opened as '${options.type}'`)
@@ -396,12 +390,11 @@ class OrbitDB {
     // Save the Access Controller
     const accessControllerAddress = await accessController.save({ onlyHash: true })
 
-    const manifest = createDBManifest(name, type, accessControllerAddress, this.identity.publicKey)
-    const manifestSignature = await signDBManifest(manifest, this.identity, this.identity.provider)
+    const manifest = createDBManifest(name, type, accessControllerAddress)
     const manifestHash = await getManifestHash(manifest)
 
     // Create the database address
-    return OrbitDBAddress.parse(path.join('/orbitdb', manifestHash, name, manifestSignature))
+    return OrbitDBAddress.parse(path.join('/orbitdb', manifestHash, name))
   }
 
   // Save the database locally
